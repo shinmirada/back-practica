@@ -1,0 +1,95 @@
+package com.example.demo;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/facturas")
+@Tag(name = "Facturas", description = "API para la gestión de facturas")
+public class FacturaController {
+
+    @Autowired
+    private FacturaService facturaService;
+
+    @GetMapping
+    @Operation(summary = "Obtener todas las facturas", description = "Devuelve una lista de todas las facturas existentes")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Lista de facturas obtenida con éxito"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    public ResponseEntity<List<Factura>> getAllFacturas() {
+        return ResponseEntity.ok(facturaService.findAllFacturas());
+    }
+
+    @GetMapping("/codigo/{codigo}")
+    @Operation(summary = "Obtener factura por código", description = "Devuelve una factura específica basada en su código")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Factura encontrada"),
+        @ApiResponse(responseCode = "404", description = "Factura no encontrada")
+    })
+    public ResponseEntity<Factura> getFacturaByCodigo(
+            @PathVariable @Parameter(description = "Código de la factura") String codigo) {
+        return facturaService.findByCodigo(codigo)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/documento/{documento}")
+    @Operation(summary = "Obtener facturas por documento de usuario", description = "Devuelve una lista de facturas de un usuario específico")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Facturas encontradas"),
+        @ApiResponse(responseCode = "404", description = "No hay facturas para este usuario")
+    })
+    public ResponseEntity<List<Factura>> getFacturasByUsuario(
+            @PathVariable @Parameter(description = "Documento del usuario") String documento) {
+        List<Factura> facturas = facturaService.findAllFacturasByUsuarioDoc(documento);
+        if (facturas.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(facturas);
+    }
+
+    @GetMapping("/idpedido/{idpedido}")
+    @Operation(summary = "Obtener facturas por id de pedido", description = "Devuelve una lista de facturas de un id de pedido específico")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Facturas encontradas"),
+            @ApiResponse(responseCode = "404", description = "No hay facturas para este pedido")
+    })
+    public ResponseEntity<List<Factura>> getFacturasByPedidoId(
+            @PathVariable @Parameter(description = "Documento del usuario") int idpedido) {
+        List<Factura> facturas = facturaService.findByPedidoId(idpedido);
+        if (facturas.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(facturas);
+    }
+    @PostMapping
+    @Operation(summary = "Crear una factura", description = "Crea una nueva factura para un pedido específico. OBLIGATORIOS: usuarioDoc, pedidoId")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Factura creada con éxito"),
+        @ApiResponse(responseCode = "400", description = "Error en los datos proporcionados")
+    })
+    public ResponseEntity<Factura> createFactura(
+            @RequestBody @Parameter(description = "Datos de la factura (usuarioDoc y pedidoId)") 
+            Map<String, Object> facturaData) {
+        try {
+            String usuarioDoc = (String) facturaData.get("usuarioDoc");
+            Integer pedidoId = (Integer) facturaData.get("pedidoId");
+            
+            Factura newFactura = facturaService.saveFactura(usuarioDoc, pedidoId);
+            return new ResponseEntity<>(newFactura, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+}
+
