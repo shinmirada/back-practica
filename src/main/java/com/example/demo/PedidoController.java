@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/pedidos")
@@ -27,8 +28,12 @@ public class PedidoController {
         @ApiResponse(responseCode = "200", description = "Lista de pedidos obtenida con éxito"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
-    public ResponseEntity<List<Pedido>> getAllPedidos() {
-        return ResponseEntity.ok(pedidoService.findAll());
+    public ResponseEntity<List<PedidoResponseDTO>> getAllPedidos() {
+        List<Pedido> pedidos = pedidoService.findAll();
+        List<PedidoResponseDTO> response = pedidos.stream()
+            .map(PedidoResponseDTO::new)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
@@ -37,23 +42,25 @@ public class PedidoController {
         @ApiResponse(responseCode = "200", description = "Pedido encontrado"),
         @ApiResponse(responseCode = "404", description = "Pedido no encontrado")
     })
-    public ResponseEntity<Pedido> getPedidoById(
-            @PathVariable @Parameter(description = "ID del pedido") Integer id) {
+    public ResponseEntity<PedidoResponseDTO> getPedidoById(@PathVariable Integer id) {
         return pedidoService.findById(id)
-            .map(ResponseEntity::ok)
+            .map(pedido -> ResponseEntity.ok(new PedidoResponseDTO(pedido)))
             .orElse(ResponseEntity.notFound().build());
     }
-
+    
+    
     @GetMapping("/estado/{estado}")
     @Operation(summary = "Obtener pedidos por estado", description = "Devuelve una lista de pedidos basado en su estado")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Pedidos encontrados"),
         @ApiResponse(responseCode = "404", description = "No hay pedidos con ese estado")
     })
-    public ResponseEntity<List<Pedido>> getPedidosByEstado(
-            @PathVariable @Parameter(description = "Estado del pedido") Estado estado) {
+    public ResponseEntity<List<PedidoResponseDTO>> getPedidosByEstado(@PathVariable Estado estado) {
         List<Pedido> pedidos = pedidoService.findByEstado(estado);
-        return ResponseEntity.ok(pedidos);
+        List<PedidoResponseDTO> response = pedidos.stream()
+            .map(PedidoResponseDTO::new)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/cliente/{documento}")
@@ -62,14 +69,17 @@ public class PedidoController {
         @ApiResponse(responseCode = "200", description = "Pedidos encontrados"),
         @ApiResponse(responseCode = "404", description = "No hay pedidos para este cliente")
     })
-    public ResponseEntity<List<Pedido>> getPedidosByCliente(
-            @PathVariable @Parameter(description = "Documento del cliente") String documento) {
+    public ResponseEntity<List<PedidoResponseDTO>> getPedidosByCliente(@PathVariable String documento) {
         List<Pedido> pedidos = pedidoService.findByClienteDoc(documento);
         if (pedidos.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(pedidos);
+        List<PedidoResponseDTO> response = pedidos.stream()
+            .map(PedidoResponseDTO::new)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
     }
+
 
     @PostMapping
     @Operation(summary = "Crear un nuevo pedido", description = "Crea un nuevo pedido con múltiples platos")
@@ -77,12 +87,10 @@ public class PedidoController {
         @ApiResponse(responseCode = "201", description = "Pedido creado con éxito"),
         @ApiResponse(responseCode = "400", description = "Datos inválidos")
     })
-    public ResponseEntity<Pedido> createPedido(
-            @RequestBody @Parameter(description = "Datos del pedido (clienteDoc, esDomicilio, items)") 
-            PedidoRequestDTO pedidoRequest) {
+    public ResponseEntity<PedidoResponseDTO> createPedido(@RequestBody PedidoRequestDTO pedidoRequest) {
         try {
             Pedido nuevoPedido = pedidoService.realizarPedido(pedidoRequest);
-            return new ResponseEntity<>(nuevoPedido, HttpStatus.CREATED);
+            return new ResponseEntity<>(new PedidoResponseDTO(nuevoPedido), HttpStatus.CREATED);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(null);
         }
@@ -94,13 +102,13 @@ public class PedidoController {
         @ApiResponse(responseCode = "200", description = "Estado actualizado con éxito"),
         @ApiResponse(responseCode = "404", description = "Pedido no encontrado")
     })
-    public ResponseEntity<Pedido> updateEstado(
-            @PathVariable @Parameter(description = "ID del pedido") Integer id,
-            @RequestBody @Parameter(description = "Nuevo estado") Map<String, String> body) {
+    public ResponseEntity<PedidoResponseDTO> updateEstado(
+            @PathVariable Integer id,
+            @RequestBody Map<String, String> body) {
         try {
             Estado nuevoEstado = Estado.valueOf(body.get("estado"));
             return pedidoService.updateEstado(id, nuevoEstado)
-                .map(ResponseEntity::ok)
+                .map(pedido -> ResponseEntity.ok(new PedidoResponseDTO(pedido)))
                 .orElse(ResponseEntity.notFound().build());
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -113,8 +121,7 @@ public class PedidoController {
         @ApiResponse(responseCode = "204", description = "Pedido eliminado con éxito"),
         @ApiResponse(responseCode = "404", description = "Pedido no encontrado o no está finalizado")
     })
-    public ResponseEntity<Void> deletePedido(
-            @PathVariable @Parameter(description = "ID del pedido") Integer id) {
+    public ResponseEntity<Void> deletePedido(@PathVariable Integer id) {
         if (pedidoService.delete(id)) {
             return ResponseEntity.noContent().build();
         }
