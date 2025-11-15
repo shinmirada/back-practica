@@ -3,12 +3,13 @@ package com.example.demo;
 import java.time.LocalDateTime;
 import java.util.List;
 import jakarta.persistence.*;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
 @Table(name = "pedidos")
 public class Pedido {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -25,10 +26,11 @@ public class Pedido {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_doc", nullable = false)
+    @JsonIgnoreProperties({"pedidos", "contraseña"}) // ← AGREGAR ESTO
     private Usuario cliente;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference // Agregar esto
+    @JsonManagedReference // ← Ya lo tienes, bien!
     private List<ItemPedido> items;
 
     // Constructores, getters y setters...

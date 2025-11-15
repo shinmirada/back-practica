@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @Entity
 @Table(name = "facturas")
 public class Factura {
-
     @Id
     @Column(length = 50)
     private String codigo;
@@ -21,12 +20,12 @@ public class Factura {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pedido_id", nullable = false, unique = true)
-    @JsonIgnoreProperties({"items", "cliente", "factura"}) // Agregar esto
+    @JsonIgnoreProperties({"items", "cliente", "factura"}) 
     private Pedido pedido;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_doc", nullable = false)
-    @JsonIgnoreProperties({"pedidos", "contraseña"}) // Agregar esto
+    @JsonIgnoreProperties({"pedidos", "contraseña"}) 
     private Usuario usuario;
     
     // Constructores

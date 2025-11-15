@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 @Entity
 @Table(name = "item_pedido")
 public class ItemPedido {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -20,7 +19,7 @@ public class ItemPedido {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pedido_id", nullable = false)
-    @JsonBackReference // Cambiar de @JsonIgnore a @JsonBackReference
+    @JsonBackReference 
     private Pedido pedido;
 
     @ManyToOne(fetch = FetchType.LAZY)
