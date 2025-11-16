@@ -8,74 +8,75 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @Entity
 @Table(name = "facturas")
 public class Factura {
-    @Id
-    @Column(length = 50)
-    private String codigo;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal total;
+	@Column(nullable = false, precision = 10, scale = 2)
+	private BigDecimal total;
 
-    @Column(nullable = false)
-    private LocalDateTime fecha = LocalDateTime.now();
+	@Column(nullable = false)
+	private LocalDateTime fecha = LocalDateTime.now();
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pedido_id", nullable = false, unique = true)
-    @JsonIgnoreProperties({"items", "cliente", "factura"}) 
-    private Pedido pedido;
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "pedido_id", nullable = false, unique = true)
+	@JsonIgnoreProperties({ "items", "cliente", "factura" })
+	private Pedido pedido;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_doc", nullable = false)
-    @JsonIgnoreProperties({"pedidos", "contraseña"}) 
-    private Usuario usuario;
-    
-    // Constructores
-    public Factura() {}
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "usuario_doc", nullable = false)
+	@JsonIgnoreProperties({ "pedidos", "contraseña" })
+	private Usuario usuario;
 
-    public Factura(String codigo, BigDecimal total, Pedido pedido, Usuario usuario) {
-        this.codigo = codigo;
-        this.total = total;
-        this.pedido = pedido;
-        this.usuario = usuario;
-    }
+	// Constructores
+	public Factura() {
+	}
 
-    // Getters y Setters
-    public String getCodigo() {
-        return codigo;
-    }
+	public Factura(Long id, BigDecimal total, LocalDateTime fecha, Pedido pedido, Usuario usuario) {
+		this.id = id;
+		this.total = total;
+		this.fecha = fecha;
+		this.pedido = pedido;
+		this.usuario = usuario;
+	}
 
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
-    }
+	public Long getId() {
+		return id;
+	}
 
-    public BigDecimal getTotal() {
-        return total;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public void setTotal(BigDecimal total) {
-        this.total = total;
-    }
+	public BigDecimal getTotal() {
+		return total;
+	}
 
-    public LocalDateTime getFecha() {
-        return fecha;
-    }
+	public void setTotal(BigDecimal total) {
+		this.total = total;
+	}
 
-    public void setFecha(LocalDateTime fecha) {
-        this.fecha = fecha;
-    }
+	public LocalDateTime getFecha() {
+		return fecha;
+	}
 
-    public Pedido getPedido() {
-        return pedido;
-    }
+	public void setFecha(LocalDateTime fecha) {
+		this.fecha = fecha;
+	}
 
-    public void setPedido(Pedido pedido) {
-        this.pedido = pedido;
-    }
+	public Pedido getPedido() {
+		return pedido;
+	}
 
-    public Usuario getUsuario() {
-        return usuario;
-    }
+	public void setPedido(Pedido pedido) {
+		this.pedido = pedido;
+	}
 
-    public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
-    }
+	public Usuario getUsuario() {
+		return usuario;
+	}
+
+	public void setUsuario(Usuario usuario) {
+		this.usuario = usuario;
+	}
 }
