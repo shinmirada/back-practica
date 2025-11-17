@@ -13,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/pedidos")
@@ -38,11 +37,10 @@ public class PedidoController {
             List<Pedido> pedidos = pedidoService.findAll();
             logger.info("📦 Se encontraron {} pedidos", pedidos.size());
             
-            // Forzar la carga de items Y cliente para evitar lazy loading
             pedidos.forEach(p -> {
                 logger.debug("Cargando items del pedido #{}", p.getId());
                 p.getItems().size();
-                p.getCliente().getNombre(); // ← AGREGAR ESTO
+                p.getCliente().getNombre();
             });
             
             logger.info("✅ Pedidos cargados correctamente");
@@ -65,7 +63,7 @@ public class PedidoController {
         logger.info("🔍 Buscando pedido con ID: {}", id);
         return pedidoService.findById(id)
             .map(pedido -> {
-                pedido.getItems().size(); // Forzar carga
+                pedido.getItems().size();
                 logger.info("✅ Pedido #{} encontrado", id);
                 return ResponseEntity.ok(pedido);
             })
@@ -132,20 +130,20 @@ public class PedidoController {
     }
 
     @PatchMapping("/{id}/estado")
-    @Operation(summary = "Actualizar estado del pedido", description = "Actualiza el estado de un pedido específico")
+    @Operation(summary = "Actualizar estado del pedido", description = "Actualiza el estado de un pedido específico usando DTO")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Estado actualizado con éxito"),
-        @ApiResponse(responseCode = "404", description = "Pedido no encontrado")
+        @ApiResponse(responseCode = "404", description = "Pedido no encontrado"),
+        @ApiResponse(responseCode = "400", description = "Estado inválido")
     })
     public ResponseEntity<Pedido> updateEstado(
             @PathVariable @Parameter(description = "ID del pedido") Integer id,
-            @RequestBody @Parameter(description = "Nuevo estado") Map<String, String> body) {
+            @RequestBody @Parameter(description = "DTO con el nuevo estado") EstadoUpdateDTO dto) {
         try {
-            Estado nuevoEstado = Estado.valueOf(body.get("estado"));
-            logger.info("🔄 Actualizando estado del pedido #{} a {}", id, nuevoEstado);
-            return pedidoService.updateEstado(id, nuevoEstado)
+            logger.info("🔄 Actualizando estado del pedido #{} a {}", id, dto.getEstado());
+            return pedidoService.updateEstado(id, dto.getEstado())
                 .map(pedido -> {
-                    logger.info("✅ Estado del pedido #{} actualizado", id);
+                    logger.info("✅ Estado del pedido #{} actualizado a {}", id, dto.getEstado());
                     return ResponseEntity.ok(pedido);
                 })
                 .orElseGet(() -> {
@@ -153,7 +151,7 @@ public class PedidoController {
                     return ResponseEntity.notFound().build();
                 });
         } catch (IllegalArgumentException e) {
-            logger.error("❌ Estado inválido: {}", body.get("estado"));
+            logger.error("❌ Estado inválido: {}", dto.getEstado());
             return ResponseEntity.badRequest().build();
         }
     }
