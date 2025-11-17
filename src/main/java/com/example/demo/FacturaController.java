@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -22,16 +23,24 @@ public class FacturaController {
     private FacturaService facturaService;
 
     @GetMapping
+    @Transactional(readOnly = true)  // ← AGREGAR
     @Operation(summary = "Obtener todas las facturas", description = "Devuelve una lista de todas las facturas existentes")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Lista de facturas obtenida con éxito"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     public ResponseEntity<List<Factura>> getAllFacturas() {
-        return ResponseEntity.ok(facturaService.findAllFacturas());
+        List<Factura> facturas = facturaService.findAllFacturas();
+        // Forzar carga de relaciones
+        facturas.forEach(f -> {
+            f.getPedido().getId();
+            f.getUsuario().getNombre();
+        });
+        return ResponseEntity.ok(facturas);
     }
 
     @GetMapping("/codigo/{codigo}")
+    @Transactional(readOnly = true)  // ← AGREGAR
     @Operation(summary = "Obtener factura por código", description = "Devuelve una factura específica basada en su código")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Factura encontrada"),
@@ -40,11 +49,16 @@ public class FacturaController {
     public ResponseEntity<Factura> getFacturaByCodigo(
             @PathVariable @Parameter(description = "Código de la factura") String codigo) {
         return facturaService.findByCodigo(codigo)
-            .map(ResponseEntity::ok)
+            .map(factura -> {
+                factura.getPedido().getId();
+                factura.getUsuario().getNombre();
+                return ResponseEntity.ok(factura);
+            })
             .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/documento/{documento}")
+    @Transactional(readOnly = true)  // ← AGREGAR
     @Operation(summary = "Obtener facturas por documento de usuario", description = "Devuelve una lista de facturas de un usuario específico")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Facturas encontradas"),
@@ -56,37 +70,52 @@ public class FacturaController {
         if (facturas.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+        // Forzar carga de relaciones
+        facturas.forEach(f -> {
+            f.getPedido().getId();
+            f.getUsuario().getNombre();
+        });
         return ResponseEntity.ok(facturas);
     }
 
     @GetMapping("/pedido/{pedidoId}/usuario/{documento}")
+    @Transactional(readOnly = true)  // ← AGREGAR
     @Operation(summary = "Obtener facturas por id de pedido", description = "Devuelve una lista de facturas de "
-    		+ "un id de pedido específico de un clinete especifico")
+    		+ "un id de pedido específico de un cliente especifico")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Facturas encontradas"),
             @ApiResponse(responseCode = "404", description = "No hay facturas para este pedido")
     })
-    public  ResponseEntity<Factura> getFacturaPorPedido(
+    public ResponseEntity<Factura> getFacturaPorPedido(
             @PathVariable @Parameter(description = "id pedido") int pedidoId,
             @PathVariable @Parameter(description = "Documento del usuario") String documento) {
         return facturaService.findByPedidoIdAndUsuarioDoc(pedidoId, documento)
-                .map(ResponseEntity::ok)
+                .map(factura -> {
+                    factura.getPedido().getId();
+                    factura.getUsuario().getNombre();
+                    return ResponseEntity.ok(factura);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
     
     
     @GetMapping("/codigo/{facturaId}/usuario/{documento}")
-    @Operation(summary = "Obtener facturas por id de pedido", description = "Devuelve una lista de facturas de "
-    		+ "un id de pedido específico de un clinete especifico")
+    @Transactional(readOnly = true)  // ← AGREGAR
+    @Operation(summary = "Obtener facturas por id de factura", description = "Devuelve una factura de "
+    		+ "un id de factura específico de un cliente especifico")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Facturas encontradas"),
             @ApiResponse(responseCode = "404", description = "No hay facturas para este usuario")
     })
     public ResponseEntity<Factura> getFacturaPorCodigo(
-            @PathVariable @Parameter(description = "id factura") long  facturaId,
+            @PathVariable @Parameter(description = "id factura") long facturaId,
             @PathVariable @Parameter(description = "Documento del usuario") String documento) {
     	  return facturaService.findByFacturaIdAndUsuarioDoc(facturaId, documento)
-                  .map(ResponseEntity::ok)
+                  .map(factura -> {
+                      factura.getPedido().getId();
+                      factura.getUsuario().getNombre();
+                      return ResponseEntity.ok(factura);
+                  })
                   .orElse(ResponseEntity.notFound().build());
     }
     

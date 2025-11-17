@@ -24,13 +24,13 @@ public class Pedido {
     @Column(nullable = false, length = 20)
     private Estado estado = Estado.PENDIENTE;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)  // ← CAMBIAR DE LAZY A EAGER
     @JoinColumn(name = "cliente_doc", nullable = false)
-    @JsonIgnoreProperties({"pedidos", "contraseña"}) // ← AGREGAR ESTO
+    @JsonIgnoreProperties({"pedidos", "contraseña"})
     private Usuario cliente;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference // ← Ya lo tienes, bien!
+    @JsonManagedReference
     private List<ItemPedido> items;
 
     // Constructores, getters y setters...
