@@ -1,6 +1,5 @@
 package com.example.demo;
 
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -9,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;  // ← AGREGAR
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -22,16 +22,21 @@ public class PedidoController {
     private PedidoService pedidoService;
 
     @GetMapping
+    @Transactional(readOnly = true)  // ← AGREGAR ESTO
     @Operation(summary = "Obtener todos los pedidos", description = "Devuelve una lista de todos los pedidos existentes")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Lista de pedidos obtenida con éxito"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     public ResponseEntity<List<Pedido>> getAllPedidos() {
-        return ResponseEntity.ok(pedidoService.findAll());
+        List<Pedido> pedidos = pedidoService.findAll();
+        // Forzar la carga de items para evitar lazy loading
+        pedidos.forEach(p -> p.getItems().size());
+        return ResponseEntity.ok(pedidos);
     }
 
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)  // ← AGREGAR
     @Operation(summary = "Obtener pedido por ID", description = "Devuelve un pedido específico basado en su ID")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Pedido encontrado"),
@@ -40,11 +45,15 @@ public class PedidoController {
     public ResponseEntity<Pedido> getPedidoById(
             @PathVariable @Parameter(description = "ID del pedido") Integer id) {
         return pedidoService.findById(id)
-            .map(ResponseEntity::ok)
+            .map(pedido -> {
+                pedido.getItems().size(); // Forzar carga
+                return ResponseEntity.ok(pedido);
+            })
             .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/estado/{estado}")
+    @Transactional(readOnly = true)  // ← AGREGAR
     @Operation(summary = "Obtener pedidos por estado", description = "Devuelve una lista de pedidos basado en su estado")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Pedidos encontrados"),
@@ -53,10 +62,12 @@ public class PedidoController {
     public ResponseEntity<List<Pedido>> getPedidosByEstado(
             @PathVariable @Parameter(description = "Estado del pedido") Estado estado) {
         List<Pedido> pedidos = pedidoService.findByEstado(estado);
+        pedidos.forEach(p -> p.getItems().size());
         return ResponseEntity.ok(pedidos);
     }
 
     @GetMapping("/cliente/{documento}")
+    @Transactional(readOnly = true)  // ← AGREGAR
     @Operation(summary = "Obtener pedidos por cliente", description = "Devuelve una lista de pedidos basado en el documento del cliente")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Pedidos encontrados"),
@@ -68,6 +79,7 @@ public class PedidoController {
         if (pedidos.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+        pedidos.forEach(p -> p.getItems().size());
         return ResponseEntity.ok(pedidos);
     }
 

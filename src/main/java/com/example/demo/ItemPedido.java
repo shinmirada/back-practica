@@ -3,6 +3,7 @@ package com.example.demo;
 import java.math.BigDecimal;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "item_pedido")
@@ -22,8 +23,9 @@ public class ItemPedido {
     @JsonBackReference 
     private Pedido pedido;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)  // ← Cambiar a EAGER para que cargue el plato
     @JoinColumn(name = "plato_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})  // ← AGREGAR ESTO
     private Plato plato;
 
     // Constructores, getters y setters...
