@@ -7,7 +7,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class FacturaService {
@@ -25,9 +24,7 @@ public class FacturaService {
         return facturaRepository.findAll();
     }
 
-    public Optional<Factura> findByCodigo(String codigo) {
-        return facturaRepository.findById(codigo);
-    }
+    // ✅ ELIMINADO: public Optional<Factura> findByCodigo(String codigo)
 
     public List<Factura> findAllFacturasByUsuarioDoc(String documento) {
         return facturaRepository.findByUsuarioDocumento(documento);
@@ -40,7 +37,6 @@ public class FacturaService {
     public Optional<Factura> findByFacturaIdAndUsuarioDoc(Long facturaId, String documento) {
         return facturaRepository.findByIdAndUsuarioDocumento(facturaId, documento);
     }
-
 
     @Transactional
     public Factura saveFactura(String usuarioDoc, Integer pedidoId) {
@@ -66,6 +62,5 @@ public class FacturaService {
 
         return facturaRepository.save(factura);
     }
-
 }
 

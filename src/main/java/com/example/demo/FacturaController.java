@@ -32,15 +32,7 @@ public class FacturaController {
 		return ResponseEntity.ok(facturas);
 	}
 
-	@GetMapping("/codigo/{codigo}")
-	@Transactional(readOnly = true)
-	@Operation(summary = "Obtener factura por código", description = "Busca y devuelve una factura específica utilizando su código único de identificación.")
-	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Factura encontrada exitosamente"),
-			@ApiResponse(responseCode = "404", description = "No se encontró ninguna factura con el código especificado") })
-	public ResponseEntity<Factura> getFacturaByCodigo(
-			@PathVariable @Parameter(description = "Código único de la factura", example = "1") String codigo) {
-		return facturaService.findByCodigo(codigo).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-	}
+	// ✅ ELIMINADO: @GetMapping("/codigo/{codigo}") getFacturaByCodigo
 
 	@GetMapping("/documento/{documento}")
 	@Transactional(readOnly = true)
@@ -87,14 +79,15 @@ public class FacturaController {
 	@PostMapping
 	@Transactional
 	@Operation(summary = "Crear una nueva factura", description = "Genera una nueva factura para un pedido específico. El sistema calcula automáticamente "
-
+			+ "el total basándose en los items del pedido.\n\n"
+			+ "**Requisitos:**\n"
 			+ "- El pedido debe existir y estar en estado FINALIZADO\n"
-
+			+ "- El usuario debe existir en el sistema\n"
 			+ "- No puede existir una factura previa para el mismo pedido")
 	
 	@ApiResponses(value = {
 			@ApiResponse(responseCode = "201", description = "Factura creada exitosamente. Retorna el objeto completo con ID generado y total calculado"),
-			@ApiResponse(responseCode = "400", description = "Error en los datos proporcionados. Causas posibles:\n"),
+			@ApiResponse(responseCode = "400", description = "Error en los datos proporcionados"),
 			@ApiResponse(responseCode = "500", description = "Error interno del servidor al procesar la creación") })
 	public ResponseEntity<Factura> createFactura(
 			@RequestBody @Parameter(description = "Datos necesarios para crear la factura. Debe contener 'usuarioDoc' y 'pedidoId'", required = true) Map<String, Object> facturaData) {
@@ -102,7 +95,6 @@ public class FacturaController {
 			String usuarioDoc = (String) facturaData.get("usuarioDoc");
 			Integer pedidoId = (Integer) facturaData.get("pedidoId");
 
-			// Validación de campos requeridos
 			if (usuarioDoc == null || usuarioDoc.trim().isEmpty()) {
 				return ResponseEntity.badRequest().body(null);
 			}
@@ -112,14 +104,12 @@ public class FacturaController {
 
 			Factura newFactura = facturaService.saveFactura(usuarioDoc, pedidoId);
 
-			// Verificar que la factura se creó correctamente con ID
 			if (newFactura != null && newFactura.getId() != null) {
 				return new ResponseEntity<>(newFactura, HttpStatus.CREATED);
 			} else {
 				return ResponseEntity.badRequest().body(null);
 			}
 		} catch (RuntimeException e) {
-			// Log del error para debugging
 			System.err.println("Error al crear factura: " + e.getMessage());
 			return ResponseEntity.badRequest().body(null);
 		}
