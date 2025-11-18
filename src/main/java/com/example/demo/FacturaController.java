@@ -23,7 +23,7 @@ public class FacturaController {
     private FacturaService facturaService;
 
     @GetMapping
-    @Transactional(readOnly = true)  // ← AGREGAR
+    @Transactional(readOnly = true)
     @Operation(summary = "Obtener todas las facturas", description = "Devuelve una lista de todas las facturas existentes")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Lista de facturas obtenida con éxito"),
@@ -31,16 +31,21 @@ public class FacturaController {
     })
     public ResponseEntity<List<Factura>> getAllFacturas() {
         List<Factura> facturas = facturaService.findAllFacturas();
-        // Forzar carga de relaciones
+        // ✅ Forzar carga de relaciones dentro de la transacción
         facturas.forEach(f -> {
-            f.getPedido().getId();
-            f.getUsuario().getNombre();
+            if (f.getPedido() != null) {
+                f.getPedido().getId();
+                f.getPedido().getCliente().getNombre();
+            }
+            if (f.getUsuario() != null) {
+                f.getUsuario().getNombre();
+            }
         });
         return ResponseEntity.ok(facturas);
     }
 
     @GetMapping("/codigo/{codigo}")
-    @Transactional(readOnly = true)  // ← AGREGAR
+    @Transactional(readOnly = true)
     @Operation(summary = "Obtener factura por código", description = "Devuelve una factura específica basada en su código")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Factura encontrada"),
@@ -50,15 +55,19 @@ public class FacturaController {
             @PathVariable @Parameter(description = "Código de la factura") String codigo) {
         return facturaService.findByCodigo(codigo)
             .map(factura -> {
-                factura.getPedido().getId();
-                factura.getUsuario().getNombre();
+                if (factura.getPedido() != null) {
+                    factura.getPedido().getId();
+                }
+                if (factura.getUsuario() != null) {
+                    factura.getUsuario().getNombre();
+                }
                 return ResponseEntity.ok(factura);
             })
             .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/documento/{documento}")
-    @Transactional(readOnly = true)  // ← AGREGAR
+    @Transactional(readOnly = true)
     @Operation(summary = "Obtener facturas por documento de usuario", description = "Devuelve una lista de facturas de un usuario específico")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Facturas encontradas"),
@@ -70,16 +79,21 @@ public class FacturaController {
         if (facturas.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        // Forzar carga de relaciones
+        // ✅ Forzar carga de relaciones
         facturas.forEach(f -> {
-            f.getPedido().getId();
-            f.getUsuario().getNombre();
+            if (f.getPedido() != null) {
+                f.getPedido().getId();
+                f.getPedido().getCliente().getNombre();
+            }
+            if (f.getUsuario() != null) {
+                f.getUsuario().getNombre();
+            }
         });
         return ResponseEntity.ok(facturas);
     }
 
     @GetMapping("/pedido/{pedidoId}/usuario/{documento}")
-    @Transactional(readOnly = true)  // ← AGREGAR
+    @Transactional(readOnly = true)
     @Operation(summary = "Obtener facturas por id de pedido", description = "Devuelve una lista de facturas de "
     		+ "un id de pedido específico de un cliente especifico")
     @ApiResponses(value = {
@@ -91,8 +105,12 @@ public class FacturaController {
             @PathVariable @Parameter(description = "Documento del usuario") String documento) {
         return facturaService.findByPedidoIdAndUsuarioDoc(pedidoId, documento)
                 .map(factura -> {
-                    factura.getPedido().getId();
-                    factura.getUsuario().getNombre();
+                    if (factura.getPedido() != null) {
+                        factura.getPedido().getId();
+                    }
+                    if (factura.getUsuario() != null) {
+                        factura.getUsuario().getNombre();
+                    }
                     return ResponseEntity.ok(factura);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -100,7 +118,7 @@ public class FacturaController {
     
     
     @GetMapping("/codigo/{facturaId}/usuario/{documento}")
-    @Transactional(readOnly = true)  // ← AGREGAR
+    @Transactional(readOnly = true)
     @Operation(summary = "Obtener facturas por id de factura", description = "Devuelve una factura de "
     		+ "un id de factura específico de un cliente especifico")
     @ApiResponses(value = {
@@ -112,8 +130,12 @@ public class FacturaController {
             @PathVariable @Parameter(description = "Documento del usuario") String documento) {
     	  return facturaService.findByFacturaIdAndUsuarioDoc(facturaId, documento)
                   .map(factura -> {
-                      factura.getPedido().getId();
-                      factura.getUsuario().getNombre();
+                      if (factura.getPedido() != null) {
+                          factura.getPedido().getId();
+                      }
+                      if (factura.getUsuario() != null) {
+                          factura.getUsuario().getNombre();
+                      }
                       return ResponseEntity.ok(factura);
                   })
                   .orElse(ResponseEntity.notFound().build());
@@ -121,6 +143,7 @@ public class FacturaController {
     
     
     @PostMapping
+    @Transactional  // ✅ IMPORTANTE: Sin readOnly para permitir escritura
     @Operation(summary = "Crear una factura", description = "Crea una nueva factura para un pedido específico. OBLIGATORIOS: usuarioDoc, pedidoId")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Factura creada con éxito"),
@@ -134,6 +157,15 @@ public class FacturaController {
             Integer pedidoId = (Integer) facturaData.get("pedidoId");
             
             Factura newFactura = facturaService.saveFactura(usuarioDoc, pedidoId);
+            
+            // ✅ Forzar carga de relaciones antes de serializar
+            if (newFactura.getPedido() != null) {
+                newFactura.getPedido().getId();
+            }
+            if (newFactura.getUsuario() != null) {
+                newFactura.getUsuario().getNombre();
+            }
+            
             return new ResponseEntity<>(newFactura, HttpStatus.CREATED);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(null);
